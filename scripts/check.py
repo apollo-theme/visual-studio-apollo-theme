@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-PALETTE_SHA256 = "550f8c36cf4ef6ac99551541d1fe9554f77d563fa1e7c129a6a82583321d61ef"
+PALETTE_SHA256 = "a2989522f9369f1e46f13e5eda3a2333b8665228c82356795c8ec277443d3811"
 ARGB = re.compile(r"^[0-9A-F]{8}$")
 REQUIRED_CATEGORIES = {"Environment", "Text Editor", "Command Window", "Output Window"}
 
@@ -39,12 +39,13 @@ def source(node: ET.Element, child_name: str) -> str:
 
 def main() -> int:
     palette_path = ROOT / "palette" / "apollo.json"
-    digest = hashlib.sha256(palette_path.read_bytes()).hexdigest()
+    palette = json.loads(palette_path.read_text(encoding="utf-8"))
+    normalized = json.dumps(palette, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+    digest = hashlib.sha256(normalized).hexdigest()
     if digest != PALETTE_SHA256:
-        fail(f"palette snapshot differs from canonical SHA-256: {digest}")
+        fail(f"palette snapshot differs from canonical semantic SHA-256: {digest}")
 
     subprocess.run([sys.executable, str(ROOT / "scripts" / "generate.py"), "--check"], cwd=ROOT, check=True)
-    palette = json.loads(palette_path.read_text(encoding="utf-8"))
     theme_path = ROOT / "themes" / "Apollo.vstheme"
     root = ET.parse(theme_path).getroot()
     if root.tag != "Themes":

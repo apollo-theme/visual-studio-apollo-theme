@@ -23,10 +23,11 @@ class VisualStudioThemeTests(unittest.TestCase):
         cls.root = ET.fromstring(cls.theme_text)
 
     def test_palette_snapshot_is_canonical(self) -> None:
-        digest = hashlib.sha256(self.palette_path.read_bytes()).hexdigest()
+        normalized = json.dumps(self.palette, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
+        digest = hashlib.sha256(normalized).hexdigest()
         self.assertEqual(
             digest,
-            "550f8c36cf4ef6ac99551541d1fe9554f77d563fa1e7c129a6a82583321d61ef",
+            "a2989522f9369f1e46f13e5eda3a2333b8665228c82356795c8ec277443d3811",
         )
 
     def test_generated_theme_is_current(self) -> None:
