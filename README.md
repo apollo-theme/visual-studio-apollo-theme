@@ -1,8 +1,30 @@
-# Apollo Theme for Visual Studio
+<h1 align="center">Visual Studio Apollo Theme</h1>
 
-A native Visual Studio 2022+ dark theme generated from the canonical Apollo palette. `themes/Apollo.vstheme` includes environment chrome, editor syntax and diagnostics, Command Window, and Output Window categories.
+<p align="center">Apollo brings a warm, high-contrast dark palette to Visual Studio 2022+ across the editor, environment chrome, and output surfaces.</p>
 
-Repository: <https://github.com/apollo-theme/visual-studio-apollo-theme>
+<p align="center">
+  <a href="https://apollo-theme.github.io/#app-visual-studio"><img alt="Preview" src="https://img.shields.io/badge/Preview-open-fabd2f?style=flat-square&amp;labelColor=141617"></a>
+  <a href="https://github.com/apollo-theme/visual-studio-apollo-theme/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/apollo-theme/visual-studio-apollo-theme/ci.yml?branch=main&amp;style=flat-square&amp;label=CI&amp;color=b8bb26&amp;labelColor=141617"></a>
+  <a href="https://github.com/apollo-theme/visual-studio-apollo-theme/releases/latest"><img alt="Latest release" src="https://img.shields.io/github/v/release/apollo-theme/visual-studio-apollo-theme?style=flat-square&amp;label=Release&amp;color=83a598&amp;labelColor=141617"></a>
+  <a href="LICENSE"><img alt="MIT license" src="https://img.shields.io/badge/license-MIT-8ec07c?style=flat-square&amp;labelColor=141617"></a>
+  <a href="https://visualstudio.microsoft.com/"><img alt="Target: Visual Studio 2022+" src="https://img.shields.io/badge/target-Visual%20Studio%202022%2B-d3869b?style=flat-square&amp;labelColor=141617"></a>
+  <a href="palette/apollo.json"><img alt="Canonical Apollo palette" src="https://img.shields.io/badge/palette-canonical-fabd2f?style=flat-square&amp;labelColor=141617"></a>
+</p>
+
+<p align="center">
+  <a href="https://apollo-theme.github.io/#app-visual-studio"><img alt="Simulated preview of Apollo in Visual Studio" src="https://raw.githubusercontent.com/apollo-theme/apollo-theme.github.io/main/previews/visual-studio.svg" width="960"></a>
+</p>
+<p align="center"><sub><strong>Simulated preview.</strong> Application chrome and typography may vary; follow the visual checks below against the canonical palette.</sub></p>
+
+> [!IMPORTANT]
+> This repository ships the native `themes/Apollo.vstheme` source and deliberately does **not** produce a VSIX. Use a temporary Color Theme Designer project to load it without inventing an unverified extension package.
+
+## Coverage
+
+- Visual Studio 2022+ environment chrome and editor syntax.
+- Diagnostics, active focus, search, selection, and current-statement cues.
+- Command Window and Output Window categories.
+- Deterministic generated output from the repository-owned palette snapshot.
 
 ## Install
 
@@ -17,10 +39,6 @@ The designer does not document a direct standalone-file import command. The temp
 
 After applying the theme, open **Tools > Options > Environment > General** and select **Apollo** in the color-theme list. Restart Visual Studio if a tool window still caches old colors.
 
-## Uninstall or restore
-
-Because this repository ships theme source rather than an installed extension, there is no Apollo entry in **Manage Extensions**. Select another color theme under **Tools > Options > Environment > General** to stop using Apollo, then delete the temporary VSTheme project if it is no longer needed.
-
 ## Visual verification
 
 Open a C# solution and verify:
@@ -32,18 +50,23 @@ Open a C# solution and verify:
 - Solution Explorer, tool windows, tabs, menus, status bar, Command Window, and Output Window remain legible.
 - Normal interface/editor text never uses restricted `#665c54`.
 
+## Uninstall or restore
+
+Because this repository ships theme source rather than an installed extension, there is no Apollo entry in **Manage Extensions**. Select another color theme under **Tools > Options > Environment > General** to stop using Apollo, then delete the temporary VSTheme project if it is no longer needed.
+
 ## Develop and validate
 
-Portable checks:
+Portable generation and checks:
 
 ```sh
+python3 scripts/generate.py
 python3 scripts/generate.py --check
 python3 scripts/check.py
 python3 -m unittest discover -s tests -v
 xmllint --noout --schema schemas/vstheme.xsd themes/Apollo.vstheme
 ```
 
-One focused test:
+Run one focused test with:
 
 ```sh
 python3 -m unittest tests.test_theme.VisualStudioThemeTests.test_editor_status_colors_match_palette
@@ -57,10 +80,10 @@ pwsh -File scripts/validate.ps1
 
 Both portable and Windows paths run in CI. `themes/Apollo.vstheme` is deterministic generated output; change mappings in `scripts/generate.py` and regenerate. `palette/apollo.json` must remain byte-for-byte canonical.
 
-## VSIX limitation
+## Why there is no VSIX
 
-This repository deliberately does **not** produce a VSIX. A correct Visual Studio theme VSIX needs a genuine extension/product identity, VSIX manifest, and Visual Studio SDK/MSBuild packaging project validated on Windows. No such identity or project was supplied, and inventing them would produce a misleading or unverified package. The native `.vstheme` is complete and loadable as source through a Color Theme Designer VSTheme project; Windows CI validates and stages it as the supported build artifact.
+A correct Visual Studio theme VSIX needs a genuine extension/product identity, VSIX manifest, and Visual Studio SDK/MSBuild packaging project validated on Windows. No such identity or project was supplied, and inventing them would produce a misleading or unverified package. The native `.vstheme` is complete and loadable as source through a Color Theme Designer VSTheme project; Windows CI validates and stages it as the supported build artifact.
 
 ## License
 
-MIT. Copyright (c) 2026 D0n9X1n.
+[MIT](LICENSE). Copyright (c) 2026 D0n9X1n.
