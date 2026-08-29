@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 import xml.etree.ElementTree as ET
@@ -11,9 +12,16 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
-PALETTE_PATH = ROOT / "palette" / "apollo.json"
-OUTPUT_PATH = ROOT / "themes" / "Apollo.vstheme"
+PALETTE_SHA256 = {
+    "apollo": "550f8c36cf4ef6ac99551541d1fe9554f77d563fa1e7c129a6a82583321d61ef",
+    "apollo-light": "b0dbdeb719ed1931c424e9590562689325ecac1609e2fed6406ec5c4d3dc5763",
+}
 THEME_GUID = "{895D123B-BC2C-58B5-B006-149BC8F1B5E7}"
+LIGHT_THEME_GUID = "{28E5D943-7F6B-5B87-B6F0-9AEF73CD4F34}"
+VARIANTS = (
+    ("apollo", "dark", "Apollo", THEME_GUID, ROOT / "palette" / "apollo.json", ROOT / "themes" / "Apollo.vstheme"),
+    ("apollo-light", "light", "Apollo Light", LIGHT_THEME_GUID, ROOT / "palette" / "apollo-light.json", ROOT / "themes" / "Apollo Light.vstheme"),
+)
 ENVIRONMENT_GUID = "{624ED9C3-BDFD-41FA-96C3-7C824EA32E3D}"
 TEXT_EDITOR_GUID = "{75A05685-00A8-4DED-BAE5-E7A50BFA929A}"
 COMMAND_WINDOW_GUID = "{EE1BE240-4E81-4BEB-8EEA-54322B6B1BF5}"
@@ -42,13 +50,15 @@ def add_color(
         ET.SubElement(color, "Foreground", attributes)
 
 
-def build_theme(palette: dict[str, Any]) -> ET.Element:
+def build_theme(
+    palette: dict[str, Any], name: str = "Apollo", guid: str = THEME_GUID
+) -> ET.Element:
     c = palette["colors"]
     root = ET.Element("Themes")
     theme = ET.SubElement(
         root,
         "Theme",
-        {"Name": "Apollo", "GUID": THEME_GUID, "MinVSVersion": "17.0"},
+        {"Name": name, "GUID": guid, "MinVSVersion": "17.0"},
     )
 
     environment = ET.SubElement(theme, "Category", {"Name": "Environment", "GUID": ENVIRONMENT_GUID})
@@ -193,31 +203,73 @@ def build_theme(palette: dict[str, Any]) -> ET.Element:
     return root
 
 
-def render_theme(palette: dict[str, Any]) -> str:
-    root = build_theme(palette)
+def render_theme(
+    palette: dict[str, Any], name: str = "Apollo", guid: str = THEME_GUID
+) -> str:
+    root = build_theme(palette, name, guid)
     ET.indent(root, space="  ")
     return '<?xml version="1.0" encoding="utf-8"?>\n' + ET.tostring(root, encoding="unicode", short_empty_elements=True) + "\n"
 
 
+def load_palette(expected_id: str, appearance: str, path: Path) -> dict[str, Any]:
+    palette_bytes = path.read_bytes()
+    digest = hashlib.sha256(palette_bytes).hexdigest()
+    if digest != PALETTE_SHA256[expected_id]:
+        raise ValueError(f"{path.relative_to(ROOT)} differs from canonical SHA-256: {digest}")
+    palette = json.loads(palette_bytes)
+    if palette.get("schemaVersion") != 1 or palette.get("id") != expected_id:
+        raise ValueError(f"{path.relative_to(ROOT)} has invalid identity")
+    if palette.get("appearance") != appearance or palette.get("colorSpace") != "srgb":
+        raise ValueError(f"{path.relative_to(ROOT)} must be the {appearance} sRGB variant")
+    return palette
+
+
+def render_all() -> dict[Path, str]:
+    return {
+        output_path: render_theme(
+            load_palette(variant_id, appearance, palette_path), name, guid
+        )
+        for variant_id, appearance, name, guid, palette_path, output_path in VARIANTS
+    }
+
+
+def write_or_check(outputs: dict[Path, str], check: bool) -> int:
+    unexpected = sorted(set((ROOT / "themes").glob("*.vstheme")) - set(outputs))
+    if unexpected:
+        for path in unexpected:
+            print(f"unexpected generated output: {path.relative_to(ROOT)}", file=sys.stderr)
+        return 1
+
+    stale: list[Path] = []
+    for path, expected in outputs.items():
+        if check:
+            actual = path.read_text(encoding="utf-8") if path.exists() else ""
+            if actual != expected:
+                stale.append(path)
+        else:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(expected, encoding="utf-8", newline="\n")
+            print(f"wrote {path.relative_to(ROOT)}")
+
+    if stale:
+        for path in stale:
+            print(f"{path.relative_to(ROOT)} is stale; run python3 scripts/generate.py", file=sys.stderr)
+        return 1
+    if check:
+        print("current: " + ", ".join(str(path.relative_to(ROOT)) for path in outputs))
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check", action="store_true", help="fail if Apollo.vstheme is stale")
+    parser.add_argument("--check", action="store_true", help="fail if a generated theme is stale")
     args = parser.parse_args()
-    palette = json.loads(PALETTE_PATH.read_text(encoding="utf-8"))
-    expected = render_theme(palette)
-
-    if args.check:
-        actual = OUTPUT_PATH.read_text(encoding="utf-8") if OUTPUT_PATH.exists() else ""
-        if actual != expected:
-            print(f"{OUTPUT_PATH.relative_to(ROOT)} is stale; run python3 scripts/generate.py", file=sys.stderr)
-            return 1
-        print(f"{OUTPUT_PATH.relative_to(ROOT)} is current")
-        return 0
-
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(expected, encoding="utf-8", newline="\n")
-    print(f"wrote {OUTPUT_PATH.relative_to(ROOT)}")
-    return 0
+    try:
+        outputs = render_all()
+    except (OSError, ValueError, json.JSONDecodeError) as error:
+        print(f"generation failed: {error}", file=sys.stderr)
+        return 2
+    return write_or_check(outputs, args.check)
 
 
 if __name__ == "__main__":

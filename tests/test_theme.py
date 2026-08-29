@@ -23,11 +23,9 @@ class VisualStudioThemeTests(unittest.TestCase):
         cls.root = ET.fromstring(cls.theme_text)
 
     def test_palette_snapshot_is_canonical(self) -> None:
-        normalized = json.dumps(self.palette, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()
-        digest = hashlib.sha256(normalized).hexdigest()
         self.assertEqual(
-            digest,
-            "a2989522f9369f1e46f13e5eda3a2333b8665228c82356795c8ec277443d3811",
+            hashlib.sha256(self.palette_path.read_bytes()).hexdigest(),
+            "550f8c36cf4ef6ac99551541d1fe9554f77d563fa1e7c129a6a82583321d61ef",
         )
 
     def test_generated_theme_is_current(self) -> None:
@@ -62,6 +60,33 @@ class VisualStudioThemeTests(unittest.TestCase):
         self.assertEqual(foreground("Warning"), "FFFABD2F")
         self.assertEqual(foreground("Track Changes after save"), "FFB8BB26")
         self.assertEqual(foreground("Information"), "FF83A598")
+
+    def test_light_variant_contract(self) -> None:
+        palette_path = ROOT / "palette" / "apollo-light.json"
+        self.assertEqual(
+            hashlib.sha256(palette_path.read_bytes()).hexdigest(),
+            "b0dbdeb719ed1931c424e9590562689325ecac1609e2fed6406ec5c4d3dc5763",
+        )
+        palette = json.loads(palette_path.read_text(encoding="utf-8"))
+        light_path = ROOT / "themes" / "Apollo Light.vstheme"
+        light_text = light_path.read_text(encoding="utf-8")
+        theme = ET.fromstring(light_text).find("Theme")
+        self.assertIsNotNone(theme)
+        assert theme is not None
+        self.assertEqual((palette["id"], palette["appearance"]), ("apollo-light", "light"))
+        self.assertEqual(theme.attrib["Name"], "Apollo Light")
+        self.assertEqual(theme.attrib["GUID"], "{28E5D943-7F6B-5B87-B6F0-9AEF73CD4F34}")
+        self.assertNotEqual(theme.attrib["GUID"], generate.THEME_GUID)
+        self.assertEqual(light_text, generate.render_theme(palette, "Apollo Light", theme.attrib["GUID"]))
+
+    def test_check_rejects_unexpected_generated_output(self) -> None:
+        unexpected = ROOT / "themes" / "Unexpected.vstheme"
+        unexpected.write_text("<Themes />\n", encoding="utf-8")
+        try:
+            result = generate.write_or_check(generate.render_all(), check=True)
+        finally:
+            unexpected.unlink()
+        self.assertEqual(result, 1)
 
     def test_restricted_color_is_not_used_by_visual_studio_theme(self) -> None:
         self.assertNotIn("FF665C54", self.theme_text.upper())

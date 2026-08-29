@@ -1,6 +1,6 @@
 <h1 align="center">Visual Studio Apollo Theme</h1>
 
-<p align="center">Apollo brings a warm, high-contrast dark palette to Visual Studio 2022+ across the editor, environment chrome, and output surfaces.</p>
+<p align="center">Apollo brings warm, high-contrast dark and light palettes to Visual Studio 2022+ across the editor, environment chrome, and output surfaces.</p>
 
 <p align="center">
   <a href="https://apollo-theme.github.io/#app-visual-studio"><img alt="Preview" src="https://img.shields.io/badge/Preview-open-fabd2f?style=flat-square&amp;labelColor=141617"></a>
@@ -13,11 +13,12 @@
 
 <p align="center">
   <a href="https://apollo-theme.github.io/#app-visual-studio"><img alt="Simulated preview of Apollo in Visual Studio" src="https://raw.githubusercontent.com/apollo-theme/apollo-theme.github.io/main/previews/visual-studio.svg" width="960"></a>
+  <a href="https://apollo-theme.github.io/#app-visual-studio-light"><img alt="Simulated preview of Apollo Light in Visual Studio" src="https://raw.githubusercontent.com/apollo-theme/apollo-theme.github.io/main/previews/visual-studio-light.svg" width="960"></a>
 </p>
 <p align="center"><sub><strong>Simulated preview.</strong> Application chrome and typography may vary; follow the visual checks below against the canonical palette.</sub></p>
 
 > [!IMPORTANT]
-> This repository ships the native `themes/Apollo.vstheme` source and deliberately does **not** produce a VSIX. Use a temporary Color Theme Designer project to load it without inventing an unverified extension package.
+> This repository ships native `themes/Apollo.vstheme` and `themes/Apollo Light.vstheme` sources and deliberately does **not** produce a VSIX. Use a temporary Color Theme Designer project to load either without inventing an unverified extension package.
 
 ## Coverage
 
@@ -30,20 +31,20 @@
 
 1. Install [Visual Studio Color Theme Designer 2022](https://marketplace.visualstudio.com/items?itemName=idex.colorthemedesigner2022).
 2. In Visual Studio 2022, create a temporary **VSTheme Project**.
-3. Close the generated theme editor, replace that project's generated `.vstheme` file with `themes/Apollo.vstheme`, and reopen it from Solution Explorer.
-4. Choose **Preview** for a temporary check or **Apply** to make Apollo available to the IDE.
+3. Close the generated theme editor, replace that project's generated `.vstheme` file with `themes/Apollo.vstheme` or `themes/Apollo Light.vstheme`, and reopen it from Solution Explorer.
+4. Choose **Preview** for a temporary check or **Apply** to make that variant available to the IDE.
 
 The designer does not document a direct standalone-file import command. The temporary project is therefore required to load and apply this source `.vstheme` without fabricating a VSIX. Keep a backup/export of your previous environment settings if you want to restore custom colors exactly.
 
 ## Activate
 
-After applying the theme, open **Tools > Options > Environment > General** and select **Apollo** in the color-theme list. Restart Visual Studio if a tool window still caches old colors.
+After applying a theme, open **Tools > Options > Environment > General** and select **Apollo** or **Apollo Light** in the color-theme list. Restart Visual Studio if a tool window still caches old colors.
 
 ## Visual verification
 
 Open a C# solution and verify:
 
-- Main editor canvas is `#141617`; plain code text is `#cfbc97`.
+- Apollo uses canvas `#141617` and text `#cfbc97`; Apollo Light uses paper `#f9f5d7` and text `#3c3836`.
 - Keywords and syntax errors are red; strings and saved changes are green.
 - Types and methods use gold `#fabd2f`; properties/information use blue; constants use magenta; namespaces use cyan.
 - Active focus/search/current-statement cues use gold; selection uses dark brown without reducing text readability.
@@ -63,7 +64,7 @@ python3 scripts/generate.py
 python3 scripts/generate.py --check
 python3 scripts/check.py
 python3 -m unittest discover -s tests -v
-xmllint --noout --schema schemas/vstheme.xsd themes/Apollo.vstheme
+xmllint --noout --schema schemas/vstheme.xsd themes/Apollo.vstheme "themes/Apollo Light.vstheme"
 ```
 
 Run one focused test with:
@@ -78,7 +79,7 @@ On Windows, run the native .NET XML validation path:
 pwsh -File scripts/validate.ps1
 ```
 
-Both portable and Windows paths run in CI. `themes/Apollo.vstheme` is deterministic generated output; change mappings in `scripts/generate.py` and regenerate. `palette/apollo.json` must remain byte-for-byte canonical.
+Both portable and Windows paths run in CI. Both `.vstheme` files are deterministic generated outputs; change mappings in `scripts/generate.py` and regenerate. Both palette snapshots must remain byte-for-byte canonical.
 
 ## Why there is no VSIX
 
