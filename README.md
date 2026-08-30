@@ -20,6 +20,8 @@
 > [!IMPORTANT]
 > This repository ships native `themes/Apollo.vstheme` and `themes/Apollo Light.vstheme` sources and deliberately does **not** produce a VSIX. Use a temporary Color Theme Designer project to load either without inventing an unverified extension package.
 
+The public **Apollo Dark** variant keeps the existing unsuffixed identity in `themes/Apollo.vstheme`; **Apollo Light** keeps its existing light identity in `themes/Apollo Light.vstheme`.
+
 ## Coverage
 
 - Visual Studio 2022+ environment chrome and editor syntax.
